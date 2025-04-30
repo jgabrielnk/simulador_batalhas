@@ -185,138 +185,248 @@ class PaginaEditarDetalhesObjeto(PaginaBase):
     def __init__(self, parent, app_controller, tipo_objeto, dados_objeto=None, nome_original=None):
         super().__init__(parent, app_controller)
         self.tipo_objeto = tipo_objeto
-        self.dados_originais = dados_objeto # Guarda os dados se for edição
-        self.nome_original = nome_original # Guarda o nome original se for edição
+        self.dados_originais = dados_objeto
+        self.nome_original = nome_original
 
         titulo = f"Criar Novo {tipo_objeto}" if dados_objeto is None else f"Editar {tipo_objeto}: {nome_original}"
         tk.Label(self, text=titulo, font=("Arial", 14)).pack(pady=10)
 
-        self.entries = {} # Dicionário para guardar os widgets de entrada
-        self.vars = {} # Dicionário para guardar as StringVars/Outras Vars
+        self.entries = {}
+        self.vars = {}
+        self.text_widgets = {} # Para campos Text (como resistencias)
 
-        frame_form = tk.Frame(self)
-        frame_form.pack(pady=PAD_Y, padx=20, fill="x")
+        # --- Frame com Scroll ---
+        canvas = tk.Canvas(self)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas)
 
-        # --- Campos Comuns e Específicos ---
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        # ------------------------
+
+        frame_form = scrollable_frame # Coloca o form dentro do frame rolável
+
+        # --- Definição de tipos de campos ---
         if self.tipo_objeto == "Combatente":
             atributos = gd.get_atributos_tipo_combatente()
             valores_padrao = gd.get_valores_padrao_tipo_combatente()
-            campos_numericos_int = ["hp_max", "taxa_ataque", "tamanho_raio"]
-            campos_numericos_float = ["forca_base", "resistencia", "alcance_base", "velocidade"]
-            campos_dropdown = {}
+            campos_numericos_int = ["taxa_ataque", "tamanho_raio"]
+            campos_numericos_float = ["hp_max", "forca_base", "alcance_base", "velocidade",
+                                      "chance_esquiva_base", "chance_bloqueio_base", "stamina_max",
+                                      "taxa_regen_stamina", "custo_stamina_movimento", "custo_stamina_ataque",
+                                      "moral_max", "coragem", "chance_critico_base",
+                                      "dano_critico_multiplicador_base"]
+            campos_dropdown = {"tipo_dano_base": gd.get_tipos_dano_validos()}
+            campos_json_text = ["resistencias"]
+            campos_boolean_check = ["imune_a_medo"] # Definida aqui
+            campos_nullable_string = []
         elif self.tipo_objeto == "Estilo":
             atributos = gd.get_atributos_estilo_luta()
             valores_padrao = gd.get_valores_padrao_estilo_luta()
-            campos_numericos_int = ["bonus_dano_vital"]
-            campos_numericos_float = ["modificador_dano", "modificador_alcance", "modificador_taxa_ataque"]
+            campos_numericos_int = []
+            campos_numericos_float = ["modificador_dano", "modificador_alcance",
+                                      "modificador_taxa_ataque", "bonus_dano_vital",
+                                      "chance_critico_bonus", "dano_critico_multiplicador"]
             campos_dropdown = {
                  "tipo_alcance": gd.get_tipos_alcance_validos(),
-                 "estrategia_mira": gd.get_estrategias_mira_validas()
+                 "estrategia_mira": gd.get_estrategias_mira_validas(),
+                 "tipo_dano_primario": gd.get_tipos_dano_validos()
             }
+            campos_json_text = [] # Definida como vazia
+            campos_boolean_check = [] # Definida como vazia
+            campos_nullable_string = ["tipo_dano_primario"]
+            
         else:
              tk.Label(frame_form, text="Tipo de objeto inválido.").pack()
-             self._criar_botao_voltar(PaginaEscolherTipoObjeto)
-             return # Não continua a criar campos
+             # Não cria botão voltar aqui, pois o frame principal (self) pode não existir completamente
+             # Idealmente, o erro deveria ser capturado antes de chamar esta página
+             return
 
-        # Cria labels e entries/dropdowns dinamicamente
+        # Cria labels e widgets dinamicamente
         for i, attr in enumerate(atributos):
             valor_atual = self.dados_originais.get(attr) if self.dados_originais else valores_padrao.get(attr)
+            label = tk.Label(frame_form, text=f"{attr.replace('_', ' ').title()}:")
+            label.grid(row=i, column=0, sticky="w", padx=PAD_X, pady=PAD_Y)
 
-            tk.Label(frame_form, text=f"{attr.replace('_', ' ').title()}:").grid(row=i, column=0, sticky="w", padx=PAD_X, pady=PAD_Y)
-
+            # O restante do loop que cria os widgets agora funcionará,
+            # pois todas as listas de verificação (campos_...) estão definidas.
             if attr in campos_dropdown:
-                opcoes = campos_dropdown[attr]
-                var = tk.StringVar(value=str(valor_atual))
-                combobox = ttk.Combobox(frame_form, textvariable=var, values=opcoes, state="readonly", width=LARGURA_ENTRY-2)
-                combobox.grid(row=i, column=1, sticky="ew", padx=PAD_X, pady=PAD_Y)
-                self.entries[attr] = combobox # Guardamos o widget para pegar o valor depois
-                self.vars[attr] = var
-            else:
-                var = tk.StringVar(value=str(valor_atual))
-                entry = tk.Entry(frame_form, textvariable=var, width=LARGURA_ENTRY)
-                entry.grid(row=i, column=1, sticky="ew", padx=PAD_X, pady=PAD_Y)
-                self.entries[attr] = entry
-                self.vars[attr] = var
-
-                # Adiciona validação para campos numéricos
-                if attr in campos_numericos_int:
+                 # ... (código do combobox) ...
+                 opcoes = campos_dropdown[attr]
+                 valor_str = str(valor_atual) if valor_atual is not None else ""
+                 var = tk.StringVar(value=valor_str)
+                 combobox = ttk.Combobox(frame_form, textvariable=var, values=opcoes, state="readonly", width=LARGURA_ENTRY-2)
+                 combobox.grid(row=i, column=1, sticky="ew", padx=PAD_X, pady=PAD_Y)
+                 self.entries[attr] = combobox
+                 self.vars[attr] = var
+            elif attr in campos_json_text:
+                 # ... (código do text widget para JSON) ...
+                 if not isinstance(valor_atual, dict): valor_atual = valores_padrao.get(attr, {})
+                 try: json_str = json.dumps(valor_atual, indent=2, ensure_ascii=False)
+                 except TypeError: json_str = "{}"
+                 text_widget = tk.Text(frame_form, width=LARGURA_ENTRY, height=4, wrap=tk.WORD)
+                 text_widget.insert("1.0", json_str)
+                 text_widget.grid(row=i, column=1, sticky="ew", padx=PAD_X, pady=PAD_Y)
+                 self.text_widgets[attr] = text_widget
+            elif attr in campos_boolean_check:
+                 # ... (código do checkbutton) ...
+                 var = tk.BooleanVar(value=bool(valor_atual))
+                 chk = tk.Checkbutton(frame_form, variable=var)
+                 chk.grid(row=i, column=1, sticky="w", padx=PAD_X, pady=PAD_Y)
+                 self.entries[attr] = chk
+                 self.vars[attr] = var
+            else: # Campos Entry (texto ou número)
+                 # ... (código do entry com validação) ...
+                 var = tk.StringVar(value=str(valor_atual))
+                 entry = tk.Entry(frame_form, textvariable=var, width=LARGURA_ENTRY)
+                 entry.grid(row=i, column=1, sticky="ew", padx=PAD_X, pady=PAD_Y)
+                 self.entries[attr] = entry
+                 self.vars[attr] = var
+                 if attr in campos_numericos_int:
                     vcmd = (self.register(lambda P: self._validar_entry_numero(P, int)), '%P')
                     entry.config(validate='key', validatecommand=vcmd)
-                elif attr in campos_numericos_float:
-                    # Permite '.' para float
+                 elif attr in campos_numericos_float:
                     vcmd = (self.register(lambda P: self._validar_entry_numero(P, float)), '%P')
                     entry.config(validate='key', validatecommand=vcmd)
 
-
-        # Botão Salvar
-        tk.Button(self, text="Salvar", command=self.salvar).pack(pady=20)
-
-        # Botão Voltar (volta para lista se editou, ou escolha de tipo se criou)
+       # --- Frame de Botões (fora do scroll) ---
+        frame_botoes = tk.Frame(self)
+        frame_botoes.pack(side=tk.BOTTOM, fill="x", pady=10, padx=20)
+        # ... (botões Salvar e Voltar) ...
+        tk.Button(frame_botoes, text="Salvar", command=self.salvar).pack(side=tk.LEFT, padx=PAD_X)
         pagina_anterior = PaginaListarEditarObjeto if self.dados_originais else PaginaEscolherTipoObjeto
-        # Passa o tipo_objeto se estiver voltando para a lista
         kwargs_voltar = {'tipo_objeto': self.tipo_objeto} if self.dados_originais else {}
-        self._criar_botao_voltar(pagina_anterior, **kwargs_voltar)
+        # Cria o botão voltar no frame de botões, não no self diretamente
+        tk.Button(frame_botoes, text="< Voltar",
+                  command=lambda cls=pagina_anterior, k=kwargs_voltar: self.app_controller.mostrar_pagina(cls, **k)
+                 ).pack(side=tk.RIGHT, padx=PAD_X) # Botão voltar à direita no frame inferior
 
     def salvar(self):
-        """Coleta os dados dos campos e salva no JSON."""
+        """Coleta TODOS os dados dos campos, valida, converte e salva. (Versão Corrigida)"""
         novos_dados = {}
+        # Identifica a chave primária (nome)
         chave_nome = "nome_tipo" if self.tipo_objeto == "Combatente" else "nome_estilo"
-        nome_novo = ""
+        nome_novo = "" # Para usar na mensagem de sucesso
 
-        # Define campos numéricos para conversão correta
+        # Obtém a lista de atributos esperados para este tipo de objeto
         if self.tipo_objeto == "Combatente":
-            campos_numericos_int = ["hp_max", "taxa_ataque", "tamanho_raio"]
-            campos_numericos_float = ["forca_base", "resistencia", "alcance_base", "velocidade"]
-        else: # Estilo
-            campos_numericos_int = ["bonus_dano_vital"]
-            campos_numericos_float = ["modificador_dano", "modificador_alcance", "modificador_taxa_ataque"]
+            atributos = gd.get_atributos_tipo_combatente()
+            campos_numericos_int = ["taxa_ataque", "tamanho_raio"]
+            campos_numericos_float = ["hp_max", "forca_base", "alcance_base", "velocidade",
+                                      "chance_esquiva_base", "chance_bloqueio_base", "stamina_max",
+                                      "taxa_regen_stamina", "custo_stamina_movimento", "custo_stamina_ataque",
+                                      "moral_max", "coragem", "chance_critico_base",
+                                      "dano_critico_multiplicador_base"]
+            campos_json_text = ["resistencias"]
+            campos_boolean_check = ["imune_a_medo"]
+            campos_nullable_string = [] # Nenhum campo string que pode ser nulo no combatente
+        elif self.tipo_objeto == "Estilo":
+            atributos = gd.get_atributos_estilo_luta()
+            campos_numericos_int = []
+            campos_numericos_float = ["modificador_dano", "modificador_alcance",
+                                      "modificador_taxa_ataque", "bonus_dano_vital",
+                                      "chance_critico_bonus", "dano_critico_multiplicador"]
+            campos_json_text = []
+            campos_boolean_check = []
+            campos_nullable_string = ["tipo_dano_primario"] # Este pode ser nulo/vazio
+        else:
+            messagebox.showerror("Erro Interno", "Tipo de objeto desconhecido para salvar.")
+            return
 
-        for attr, widget in self.entries.items():
-            valor_str = self.vars[attr].get()
+        # Itera por todos os atributos esperados
+        for attr in atributos:
             valor_final = None
+            valor_obtido = None
 
-            if not valor_str and attr != chave_nome: # Permite nome vazio temporariamente? Não.
-                 if attr in campos_numericos_int or attr in campos_numericos_float:
-                      valor_str = "0" # Default para números se vazio
-                 else:
-                      messagebox.showerror("Erro", f"O campo '{attr}' não pode estar vazio.")
-                      return
+            # 1. Obter o valor bruto do widget correto
+            if attr in self.vars: # Para Entry, Combobox, Checkbutton
+                valor_obtido = self.vars[attr].get()
+            elif attr in self.text_widgets: # Para Text (JSON)
+                valor_obtido = self.text_widgets[attr].get("1.0", tk.END).strip()
+            else:
+                print(f"Aviso: Widget/Var não encontrado para o atributo '{attr}' ao salvar.")
+                # Você pode querer parar aqui ou continuar com um valor padrão?
+                # Por segurança, vamos parar se um campo esperado não tiver widget
+                messagebox.showerror("Erro Interno", f"Widget de configuração ausente para '{attr}'.")
+                return
 
+            # 2. Tratamento Específico para Booleano
+            if attr in campos_boolean_check:
+                # O .get() de BooleanVar já retorna True/False
+                valor_final = bool(valor_obtido) # Garante que seja booleano
+                novos_dados[attr] = valor_final
+                continue # Booleano tratado, passa para o próximo atributo
+
+            # 3. Tratamento para outros tipos (requer valor como string primeiro)
+            valor_str = str(valor_obtido).strip() # Converte para string e remove espaços extras
+
+            # 4. Validação de Vazio (para campos não-booleanos e não-nullable)
+            if not valor_str and attr not in campos_nullable_string:
+                # Se o campo não pode ser nulo e está vazio...
+                if attr in campos_numericos_int or attr in campos_numericos_float:
+                    valor_str = "0" # Assume 0 para números vazios
+                elif attr in campos_json_text:
+                    valor_str = "{}" # Assume JSON vazio
+                else: # Inclui o nome e outras strings obrigatórias
+                    messagebox.showerror("Erro de Validação", f"O campo '{attr.replace('_', ' ').title()}' não pode estar vazio.")
+                    return
+
+            # 5. Conversão para o tipo Python correto
             try:
                 if attr == chave_nome:
-                    if not valor_str.strip():
-                         messagebox.showerror("Erro", "O nome não pode estar vazio.")
-                         return
-                    valor_final = valor_str.strip()
+                    valor_final = valor_str # Já é string
+                    if not valor_final: raise ValueError("Nome não pode ser vazio.")
                     nome_novo = valor_final
                 elif attr in campos_numericos_int:
                     valor_final = int(valor_str)
                 elif attr in campos_numericos_float:
                     valor_final = float(valor_str)
-                else: # Strings (como tipo_alcance, estrategia_mira)
+                elif attr in campos_json_text:
+                     try:
+                         valor_final = json.loads(valor_str)
+                         if not isinstance(valor_final, dict):
+                              raise json.JSONDecodeError("O valor deve ser um dicionário JSON (ex: {\"chave\": valor}).", valor_str, 0)
+                     except json.JSONDecodeError as e:
+                          messagebox.showerror("Erro de JSON", f"Erro no campo '{attr}':\n{e}\n\nExemplo válido:\n" + '{\n  "fisico": 10,\n  "fogo": -5\n}')
+                          return
+                elif attr in campos_nullable_string:
+                     # Se chegou aqui e valor_str está vazio, valor_final será None
+                     # Se não está vazio, será a string
+                     valor_final = valor_str if valor_str else None
+                else: # Outros campos string/dropdown (que não são nullable)
                     valor_final = valor_str
 
-                novos_dados[attr] = valor_final
-            except ValueError:
-                messagebox.showerror("Erro de Conversão", f"Valor inválido '{valor_str}' para o campo '{attr}'.")
-                return # Interrompe o salvamento
+                novos_dados[attr] = valor_final # Armazena o valor convertido
 
-        # Tenta salvar
+            except ValueError as e: # Erro na conversão int()/float()
+                messagebox.showerror("Erro de Conversão", f"Valor inválido '{valor_str}' para o campo numérico '{attr}'.\nDetalhe: {e}")
+                return
+            # Erro de JSON já tratado no bloco específico
+
+        # --- Fim do loop, todos os dados coletados e validados ---
+
+        # 6. Tenta Salvar usando o gerenciador de dados
         sucesso = False
+        print("Dados a serem salvos:", json.dumps(novos_dados, indent=2)) # Debug: Ver os dados finais
         if self.tipo_objeto == "Combatente":
             sucesso = gd.adicionar_ou_atualizar_tipo(novos_dados, self.nome_original)
         elif self.tipo_objeto == "Estilo":
              sucesso = gd.adicionar_ou_atualizar_estilo(novos_dados, self.nome_original)
 
+        # 7. Feedback e Navegação
         if sucesso:
             messagebox.showinfo("Sucesso", f"{self.tipo_objeto} '{nome_novo}' salvo com sucesso!")
-            # Volta para a tela anterior
+            # Volta para a tela anterior (lista ou escolha de tipo)
             pagina_anterior = PaginaListarEditarObjeto if self.dados_originais else PaginaEscolherTipoObjeto
-            # Se estava editando, precisa passar o tipo de objeto de volta
-            if self.dados_originais:
-                 self.app_controller.mostrar_pagina(pagina_anterior, tipo_objeto=self.tipo_objeto)
-            else:
-                 self.app_controller.mostrar_pagina(pagina_anterior) # Modo criar não precisa
+            kwargs_voltar = {'tipo_objeto': self.tipo_objeto} if self.dados_originais else {}
+            self.app_controller.mostrar_pagina(pagina_anterior, **kwargs_voltar)
         else:
             messagebox.showerror("Erro", f"Falha ao salvar o {self.tipo_objeto}.")
 
@@ -366,7 +476,12 @@ class PaginaCriarSimulacao(PaginaBase):
         tk.Label(frame_geral, text="Altura Arena:").grid(row=2, column=0, sticky="w", padx=PAD_X, pady=PAD_Y)
         self.altura_arena_var = tk.StringVar(value=str(simulacao_existente.get("arena_altura", 600) if simulacao_existente else 600))
         tk.Entry(frame_geral, textvariable=self.altura_arena_var, width=10, validate='key', validatecommand=vcmd_int).grid(row=2, column=1, sticky="w", padx=PAD_X, pady=PAD_Y)
-
+      
+       # --- Empacotamento do Canvas e Scrollbars (ainda dentro do 'self') ---
+        canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True) # Canvas ocupa o topo
+        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
+        scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X) # Scroll X abaixo do canvas
+       
         # --- Configuração de Equipes ---
         self.frame_equipes_container = tk.Frame(scrollable_frame)
         self.frame_equipes_container.pack(pady=PAD_Y, padx=PAD_X, fill="x")
@@ -383,11 +498,6 @@ class PaginaCriarSimulacao(PaginaBase):
 
 
         tk.Button(scrollable_frame, text="Adicionar Equipe", command=self.adicionar_frame_equipe).pack(pady=PAD_Y)
-
-        # --- Empacotamento do Canvas e Scrollbars (ainda dentro do 'self') ---
-        canvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True) # Canvas ocupa o topo
-        scrollbar_y.pack(side=tk.RIGHT, fill=tk.Y)
-        scrollbar_x.pack(side=tk.BOTTOM, fill=tk.X) # Scroll X abaixo do canvas
 
         # --- Botões de Ação (fora do scroll, no 'self', abaixo de tudo) ---
         frame_acoes = tk.Frame(self) # Criado diretamente no 'self' (a página)

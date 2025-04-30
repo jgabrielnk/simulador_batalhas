@@ -9,35 +9,31 @@ class MotorSimulacao:
             combatentes_iniciais (list): A lista de objetos Combatente no início.
         """
         self.combatentes = combatentes_iniciais
-        self.combatentes_vivos = list(self.combatentes) # Cópia inicial
+        self.combatentes_vivos = list(self.combatentes)
         self.rodada = 0
         self.fim_de_jogo = False
-        self.velocidade_sim = 1.0 # Valor inicial
         self.equipe_vencedora = None
-        self.info_ultimos_ataques = [] # Para visualização opcional
+        self.info_ultimos_ataques = []
+        self.velocidade_sim = 1.0
+        self.FPS_ALVO = 60 # Para cálculos de taxas
 
     def atualizar(self):
         """Executa um único tick (passo) da simulação."""
-        if self.fim_de_jogo:
-            return
-
+        if self.fim_de_jogo: return
         self.rodada += 1
-        self.info_ultimos_ataques.clear() # Limpa infos da rodada anterior
+        self.info_ultimos_ataques.clear()
 
-        # Atualiza cada combatente vivo
-        # Iterar sobre uma cópia caso a lista seja modificada (morte)
-        combatentes_na_rodada = list(self.combatentes_vivos)
+        combatentes_na_rodada = list(self.combatentes_vivos) # Cópia para iteração segura
         for combatente in combatentes_na_rodada:
-            if combatente.esta_vivo():
-                 info_ataque = combatente.atualizar(combatentes_na_rodada) # Passa a lista atualizada
-                 if info_ataque:
-                     self.info_ultimos_ataques.append(info_ataque)
+            if combatente.estado.esta_vivo: # Checa via componente
+                 # Passa refs necessárias para os updates dos componentes
+                 combatente.atualizar(todos_combatentes=combatentes_na_rodada, motor_simulacao=self)
+                 # Como coletar info de ataque? O componente de ataque poderia popular uma lista no motor? Ou retornar info?
+                 # Simplificação: Por ora, não coletamos info detalhada de ataques para visualização
 
-        # Remove os mortos da lista de vivos
-        mortos_nesta_rodada = [c for c in self.combatentes_vivos if not c.esta_vivo()]
-        self.combatentes_vivos = [c for c in self.combatentes_vivos if c.esta_vivo()]
+        # Remove mortos (precisa checar o estado no componente)
+        self.combatentes_vivos = [c for c in self.combatentes if c.estado.esta_vivo]
 
-        # Verifica condição de vitória
         self._checar_vitoria()
 
     def _checar_vitoria(self):

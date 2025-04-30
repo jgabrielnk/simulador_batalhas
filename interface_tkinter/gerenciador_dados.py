@@ -197,19 +197,55 @@ def deletar_objeto(nome_objeto, tipo_objeto):
 
 # --- Valores Padrão para Novos Objetos ---
 def get_atributos_tipo_combatente():
-    return ["nome_tipo", "hp_max", "forca_base", "resistencia", "alcance_base", "velocidade", "taxa_ataque", "tamanho_raio"]
+    """Retorna lista completa de atributos configuráveis."""
+    return [
+        "nome_tipo", "hp_max", "forca_base", "alcance_base", "velocidade",
+        "taxa_ataque", "tamanho_raio",
+        "resistencias",
+        "chance_esquiva_base", "chance_bloqueio_base",
+        "stamina_max", "taxa_regen_stamina", "custo_stamina_movimento", "custo_stamina_ataque",
+        "moral_max", "coragem", "imune_a_medo", # Adicionado aqui
+        "tipo_dano_base",
+        "chance_critico_base", "dano_critico_multiplicador_base"
+    ]
 
 def get_valores_padrao_tipo_combatente():
-     return {"nome_tipo": "Novo Combatente", "hp_max": 100, "forca_base": 10, "resistencia": 1, "alcance_base": 30, "velocidade": 3, "taxa_ataque": 60, "tamanho_raio": 10}
-
+     """Retorna dicionário com valores padrão para todos os atributos."""
+     return {
+        "nome_tipo": "Novo Combatente", "hp_max": 100, "forca_base": 10.0,
+        "alcance_base": 30.0, "velocidade": 3.0, "taxa_ataque": 60, "tamanho_raio": 10,
+        "resistencias": {"fisico": 0},
+        "chance_esquiva_base": 0.05, "chance_bloqueio_base": 0.05,
+        "stamina_max": 100.0, "taxa_regen_stamina": 1.0, "custo_stamina_movimento": 0.1, "custo_stamina_ataque": 5.0,
+        "moral_max": 100.0, "coragem": 0.5, "imune_a_medo": False, # Adicionado aqui
+        "tipo_dano_base": "fisico",
+        "chance_critico_base": 0.05, "dano_critico_multiplicador_base": 1.5
+     }
+     
 def get_atributos_estilo_luta():
-    return ["nome_estilo", "tipo_alcance", "modificador_dano", "modificador_alcance", "modificador_taxa_ataque", "bonus_dano_vital", "estrategia_mira"]
+    """Retorna lista completa de atributos configuráveis."""
+    return [
+        "nome_estilo", "tipo_alcance", "modificador_dano", "modificador_alcance",
+        "modificador_taxa_ataque", "bonus_dano_vital", "estrategia_mira",
+        "tipo_dano_primario", # Pode ser string ou null/None
+        "chance_critico_bonus", "dano_critico_multiplicador"
+        ]
 
 def get_valores_padrao_estilo_luta():
-     return {"nome_estilo": "Novo Estilo", "tipo_alcance": "corpo_a_corpo", "modificador_dano": 1.0, "modificador_alcance": 1.0, "modificador_taxa_ataque": 1.0, "bonus_dano_vital": 0, "estrategia_mira": "mais_proximo"}
-
+     """Retorna dicionário com valores padrão para todos os atributos."""
+     return {
+        "nome_estilo": "Novo Estilo", "tipo_alcance": "corpo_a_corpo",
+        "modificador_dano": 1.0, "modificador_alcance": 1.0, "modificador_taxa_ataque": 1.0,
+        "bonus_dano_vital": 0.0, "estrategia_mira": "mais_proximo",
+        "tipo_dano_primario": None, # Default é usar o do combatente
+        "chance_critico_bonus": 0.0, "dano_critico_multiplicador": 1.0
+     }
+     
 def get_tipos_alcance_validos():
     return ["corpo_a_corpo", "longo_alcance"]
+
+def get_tipos_dano_validos():
+    return ["contundente", "perfurante", "cortante", "fogo", "gelo", "acido", "electrico", "explosivo", ""] 
 
 def get_estrategias_mira_validas():
     return ["mais_proximo", "hp_mais_baixo"]

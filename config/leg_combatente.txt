@@ -1,0 +1,51 @@
+  {
+    "nome_tipo": "Humano Medio",
+    "hp_max": 100,
+    "forca_base": 10,
+    "alcance_base": 30,
+    "velocidade": 3,
+    "taxa_ataque": 60, // Por ticks (60 ticks ~= 1 s)
+    "tamanho_raio": 10,
+    "resistencias": { // Como Dicionário
+      "fisico": 2,
+      "fogo": 0,
+      "gelo": 0,
+      "acido": -5 // Exemplo de vulnerabilidade
+    },
+    "chance_esquiva_base": 0.05, // 5%
+    "chance_bloqueio_base": 0.10, // 10%
+    "stamina_max": 100.0,
+    "taxa_regen_stamina": 1.5, // Pontos por segundo (requer ajuste no componente para usar FPS)
+    "custo_stamina_movimento": 0.05, // Por tick (requer ajuste no componente)
+    "custo_stamina_ataque": 8.0,
+    "moral_max": 80.0,
+    "coragem": 0.4, // 0.0 a 1.0
+    "tipo_dano_base": "fisico", // Tipo padrão do ataque desarmado/básico
+    "chance_critico_base": 0.05, // 5%
+    "dano_critico_multiplicador_base": 1.5 // 150% do dano normal
+  },
+  {
+    "nome_tipo": "Gorila Silverback",
+    "hp_max": 400,
+    "forca_base": 45,
+    "alcance_base": 45,
+    "velocidade": 4,
+    "taxa_ataque": 80,
+    "tamanho_raio": 25,
+    "resistencias": {
+      "fisico": 10,
+      "fogo": -10, // Vulnerável a fogo?
+      "gelo": 5
+    },
+    "chance_esquiva_base": 0.02,
+    "chance_bloqueio_base": 0.05, // Gorilas bloqueiam menos?
+    "stamina_max": 250.0,
+    "taxa_regen_stamina": 2.5,
+    "custo_stamina_movimento": 0.08,
+    "custo_stamina_ataque": 15.0,
+    "moral_max": 120.0, // Mais difícil de abalar
+    "coragem": 0.8,
+    "tipo_dano_base": "contundente", // Dano de impacto
+    "chance_critico_base": 0.10, // Mais chance de golpe poderoso
+    "dano_critico_multiplicador_base": 1.8
+  },

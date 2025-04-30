@@ -29,6 +29,7 @@ class Visualizador:
         self.fonte_padrao = pygame.font.SysFont(None, 24) # Fonte para texto
         self.fonte_pequena = pygame.font.SysFont(None, 18) # Fonte para HP
         self.fonte_legenda = pygame.font.SysFont(None, 20) # Fonte menor para legenda
+        self.fonte_estado = pygame.font.SysFont(None, 16) # Para estado (Fugindo, Cansado)
         self.cores_equipes = {} # Cache de cores das equipes
 
     def _get_cor_equipe(self, id_equipe, config_cenario):
@@ -63,24 +64,45 @@ class Visualizador:
         # 3. Desenha os combatentes vivos
         config_cenario = configurador.get_config_cenario()
         for combatente in motor_simulacao.get_combatentes_vivos():
-            pos_x, pos_y = int(combatente.posicao[0]), int(combatente.posicao[1])
-            raio = combatente.tipo.tamanho_raio
+            # Acessa dados via componentes
+            pos_x = int(combatente.movimento.posicao[0])
+            pos_y = int(combatente.movimento.posicao[1])
+            raio = combatente.movimento.tamanho_raio
             cor = configurador.get_cor_equipe(combatente.equipe)
+            hp_ratio = combatente.estado.hp_atual / combatente.estado.hp_max if combatente.estado.hp_max > 0 else 0
 
-            # Desenha o corpo do combatente
+            # Desenha corpo
             pygame.draw.circle(self.tela, cor, (pos_x, pos_y), raio)
+            # Desenha Facing (opcional - pequena linha na direção)
+            dir_x, dir_y = combatente.movimento.direcao
+            pygame.draw.line(self.tela, PRETO, (pos_x, pos_y),
+                             (pos_x + dir_x * raio, pos_y + dir_y * raio), 2)
 
-            # Desenha a barra de HP
-            hp_ratio = combatente.hp_atual / combatente.tipo.hp_max
+            # Desenha barra de HP
             largura_hp = int(raio * 2 * hp_ratio)
             altura_hp = 4
             pos_hp_x = pos_x - raio
-            pos_hp_y = pos_y - raio - altura_hp - 2 # Um pouco acima
-            barra_fundo_rect = pygame.Rect(pos_hp_x, pos_hp_y, raio * 2, altura_hp)
-            barra_hp_rect = pygame.Rect(pos_hp_x, pos_hp_y, largura_hp, altura_hp)
+            pos_hp_y = pos_y - raio - altura_hp - 2
+            pygame.draw.rect(self.tela, VERMELHO_CLARO, (pos_hp_x, pos_hp_y, raio * 2, altura_hp))
+            pygame.draw.rect(self.tela, VERDE_CLARO, (pos_hp_x, pos_hp_y, largura_hp, altura_hp))
 
-            pygame.draw.rect(self.tela, VERMELHO_CLARO, barra_fundo_rect)
-            pygame.draw.rect(self.tela, VERDE_CLARO, barra_hp_rect)
+            # Desenha barra de Stamina (opcional)
+            if hasattr(combatente, 'stamina'):
+                stamina_ratio = combatente.stamina.stamina_atual / combatente.stamina.stamina_max if combatente.stamina.stamina_max > 0 else 0
+                largura_stamina = int(raio * 2 * stamina_ratio)
+                altura_stamina = 3
+                pos_stamina_y = pos_hp_y - altura_stamina - 1
+                AMARELO = (255, 255, 0)
+                CINZA_ESCURO = (50, 50, 50)
+                pygame.draw.rect(self.tela, CINZA_ESCURO, (pos_hp_x, pos_stamina_y, raio * 2, altura_stamina))
+                pygame.draw.rect(self.tela, AMARELO, (pos_hp_x, pos_stamina_y, largura_stamina, altura_stamina))
+
+            # Exibe Estado (Fugindo, Cansado, etc) - opcional
+            estado_txt = combatente.estado.estado_atual
+            if estado_txt != "Ocioso" and estado_txt != "Movendo" and estado_txt != "Atacando": # Mostra só estados especiais
+                estado_surface = self.fonte_estado.render(estado_txt, True, BRANCO)
+                estado_rect = estado_surface.get_rect(center=(pos_x, pos_y + raio + 8))
+                self.tela.blit(estado_surface, estado_rect)
 
             # Opcional: Desenhar o alvo (uma linha fina)
             # if combatente.alvo_atual:
