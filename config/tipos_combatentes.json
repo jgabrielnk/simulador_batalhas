@@ -1,0 +1,42 @@
+[
+  {
+    "nome_tipo": "Humano Medio",
+    "hp_max": 100,
+    "forca_base": 10.0,
+    "resistencia": 2.0,
+    "alcance_base": 30.0,
+    "velocidade": 3.0,
+    "taxa_ataque": 60,
+    "tamanho_raio": 10
+  },
+  {
+    "nome_tipo": "Gorila Silverback",
+    "hp_max": 400,
+    "forca_base": 45.0,
+    "resistencia": 10.0,
+    "alcance_base": 45.0,
+    "velocidade": 4.0,
+    "taxa_ataque": 80,
+    "tamanho_raio": 25
+  },
+  {
+    "nome_tipo": "Arqueiro Humano",
+    "hp_max": 80,
+    "forca_base": 15.0,
+    "resistencia": 1.0,
+    "alcance_base": 300.0,
+    "velocidade": 2.0,
+    "taxa_ataque": 90,
+    "tamanho_raio": 10
+  },
+  {
+    "nome_tipo": "Humano Treinado",
+    "hp_max": 150,
+    "forca_base": 20.0,
+    "resistencia": 4.0,
+    "alcance_base": 30.0,
+    "velocidade": 4.0,
+    "taxa_ataque": 50,
+    "tamanho_raio": 10
+  }
+]

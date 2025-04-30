@@ -1,0 +1,39 @@
+[
+  {
+    "nome_simulacao": "100 H vs 1 G",
+    "arena_largura": 800,
+    "arena_altura": 600,
+    "equipes": [
+      {
+        "id_equipe": 1,
+        "cor": [
+          67,
+          188,
+          248
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Humano Treinado",
+            "quantidade": 100,
+            "estilo_luta": "Assassino desarmado"
+          }
+        ]
+      },
+      {
+        "id_equipe": 2,
+        "cor": [
+          79,
+          113,
+          88
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Gorila Silverback",
+            "quantidade": 1,
+            "estilo_luta": "Furia Primata"
+          }
+        ]
+      }
+    ]
+  }
+]
