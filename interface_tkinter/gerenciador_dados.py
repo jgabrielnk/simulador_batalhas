@@ -214,7 +214,7 @@ def get_valores_padrao_tipo_combatente():
      return {
         "nome_tipo": "Novo Combatente", "hp_max": 100, "forca_base": 10.0,
         "alcance_base": 30.0, "velocidade": 3.0, "taxa_ataque": 60, "tamanho_raio": 10,
-        "resistencias": {"fisico": 0},
+        "resistencias": {"contundente": 0, "perfurante": 0, "cortante": 0, "fogo": 0, "gelo": 0, "acido": 0, "electrico": 0, "explosivo": 0},
         "chance_esquiva_base": 0.05, "chance_bloqueio_base": 0.05,
         "stamina_max": 100.0, "taxa_regen_stamina": 1.0, "custo_stamina_movimento": 0.1, "custo_stamina_ataque": 5.0,
         "moral_max": 100.0, "coragem": 0.5, "imune_a_medo": False, # Adicionado aqui

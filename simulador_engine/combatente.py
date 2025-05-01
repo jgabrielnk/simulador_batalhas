@@ -54,7 +54,11 @@ class Combatente:
                                         estilo_luta_data=estilo_data, # Passa o dict do estilo
                                         tipo_dano_base=tipo_data.get('tipo_dano_base', 'fisico'),
                                         chance_crit_base=float(tipo_data.get('chance_critico_base', 0.05)),
-                                        mult_crit_base=float(tipo_data.get('dano_critico_multiplicador_base', 1.5)))
+                                        mult_crit_base=float(tipo_data.get('dano_critico_multiplicador_base', 1.5)),
+                                        aoe_raio_mult=float(tipo_data.get('aoe_raio_base_mult_proprio_raio', 0.5)),
+                                        aoe_perc_dano=float(tipo_data.get('aoe_percentual_dano_primario', 0.25)),
+                                        aoe_mod_tamanho=float(tipo_data.get('aoe_mod_dano_por_razao_tamanho', 0.1))
+                                        )
 
             # Componentes Opcionais (poderiam ser ativados por config)
             self.stamina = StaminaComponent(self,

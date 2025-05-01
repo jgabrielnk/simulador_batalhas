@@ -1,1 +1,76 @@
-[]
+[
+  {
+    "nome_simulacao": "Braquiossauro",
+    "arena_largura": 800,
+    "arena_altura": 600,
+    "equipes": [
+      {
+        "id_equipe": 1,
+        "cor": [
+          133,
+          191,
+          118
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Braquiossauro",
+            "quantidade": 1,
+            "estilo_luta": "Briga de Rua"
+          }
+        ]
+      },
+      {
+        "id_equipe": 2,
+        "cor": [
+          228,
+          73,
+          196
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Humano Medio",
+            "quantidade": 10,
+            "estilo_luta": "Briga de Rua"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "nome_simulacao": "100 H vs 1 G",
+    "arena_largura": 800,
+    "arena_altura": 600,
+    "equipes": [
+      {
+        "id_equipe": 1,
+        "cor": [
+          233,
+          78,
+          97
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Humano Medio",
+            "quantidade": 100,
+            "estilo_luta": "Briga de Rua"
+          }
+        ]
+      },
+      {
+        "id_equipe": 2,
+        "cor": [
+          220,
+          64,
+          199
+        ],
+        "membros": [
+          {
+            "nome_tipo": "Gorila Silverback",
+            "quantidade": 1,
+            "estilo_luta": "Estinto Primata"
+          }
+        ]
+      }
+    ]
+  }
+]

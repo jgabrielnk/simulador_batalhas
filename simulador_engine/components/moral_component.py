@@ -4,7 +4,8 @@ from .base_component import BaseComponent
 from ..utils import calcular_distancia # Import relativo
 
 RAIO_CHEK_MORAL = 100 # Pixels para checar aliados/inimigos próximos
-RECUPERACAO_MORAL_PASSIVA = 0.01 # Pequena quantidade de moral recuperada por check (ajustar!)
+TICKS_ENTRE_CHECKS = 30 # Ex: Checa a cada 30 ticks (ajustar conforme FPS do motor)
+RECUPERACAO_MORAL_PASSIVA = 0.01/TICKS_ENTRE_CHECKS # Pequena quantidade de moral recuperada por check (ajustar!)
 
 class MoralComponent(BaseComponent):
     def __init__(self, combatente_owner, moral_max, coragem, imune_a_medo=False):
@@ -13,10 +14,10 @@ class MoralComponent(BaseComponent):
         self.moral_atual = moral_max
         self.imune_a_medo = imune_a_medo # Guarda a informaçã
         self.coragem = coragem # 0.0 a 1.0 (modifica perda/ganho de moral)
-        self.limiar_fugir = moral_max * 0.15 # Ex: Foge abaixo de 20%
+        self.limiar_fugir = moral_max * 0.20 # Ex: Foge abaixo de 20%
         self.limiar_recuperar = moral_max * 0.4 # Ex: Recupera acima de 40%
         self.recarga_check = 0
-        self.TICKS_ENTRE_CHECKS = 30 # Ex: Checa a cada 30 ticks (ajustar conforme FPS do motor)
+        self.TICKS_ENTRE_CHECKS = TICKS_ENTRE_CHECKS # Ex: Checa a cada 30 ticks (ajustar conforme FPS do motor)
 
     def registrar_dano_sofrido(self, dano, hp_atual, hp_max):
         if dano > 0 and not self.imune_a_medo: # Só perde moral se não for imune
@@ -26,9 +27,9 @@ class MoralComponent(BaseComponent):
     def modificar_moral(self, quantidade):
         # Coragem reduz perda e aumenta ganho
         if quantidade < 0:
-             quantidade *= (1.0 - self.coragem * 0.7) # Coragem 1.0 reduz perda em 50%
+             quantidade *= (1.0 - self.coragem * 0.5) # Coragem 1.0 reduz perda em 50%
         else:
-             quantidade *= (1.0 + self.coragem * 0.4) # Coragem 1.0 aumenta ganho em 20%
+             quantidade *= (1.0 + self.coragem * 0.2) # Coragem 1.0 aumenta ganho em 20%
 
         self.moral_atual += quantidade
         self.moral_atual = max(0, min(self.moral_max, self.moral_atual))
@@ -64,11 +65,11 @@ class MoralComponent(BaseComponent):
         if aliados_mortos_recente > 0:
              # Perda maior se estiver em menor número?
              mod_num = 1.0 + max(0, inimigos_perto - aliados_perto) * 0.1 # Penalidade maior se outnumbered
-             self.modificar_moral(-aliados_mortos_recente * (self.moral_max * 0.05) * mod_num) # Ex: 5% max moral por morte
+             self.modificar_moral(-aliados_mortos_recente * (self.moral_max * 0.2) * mod_num) # Ex: 5% max moral por morte
 
         # Perda/Ganho por superioridade/inferioridade numérica local
         diferenca_num = aliados_perto - inimigos_perto
-        fator_influencia_num = 0.01 # Quanto a diferença numérica afeta
+        fator_influencia_num = 0.005 # Quanto a diferença numérica afeta
         self.modificar_moral(diferenca_num * (self.moral_max * fator_influencia_num))
 
 
@@ -82,8 +83,11 @@ class MoralComponent(BaseComponent):
             # 1. Regeneração Passiva (representa calma ao longo do tempo)
             # Só regenera se não estiver ativamente perdendo moral por outras fontes?
             # Ou regenera sempre um pouco? Vamos regenerar sempre um pouquinho.
+            moral_antes_check = self.moral_atual # Guarda moral antes das modificações
             if self.moral_atual < self.moral_max:
                  self.modificar_moral(RECUPERACAO_MORAL_PASSIVA)
+                 
+            print(f"MORAL: {self.owner.id_unico} , {self.moral_atual}.")
 
             # 2. Checar Ambiente (e modificar moral com base nele)
             self._checar_ambiente(todos_combatentes)
@@ -92,30 +96,33 @@ class MoralComponent(BaseComponent):
             # 3. Avaliar Estado de Fuga/Recuperação
             estado_atual = self.owner.estado.estado_atual
 
-            if estado_atual == "Fugindo":
-                # Tenta Recuperar
-                if self.moral_atual > self.limiar_recuperar:
-                    # Condição adicional: não há inimigos muito próximos? (Opcional)
-                    inimigos_muito_perto = False
-                    for inimigo in [c for c in todos_combatentes if c.equipe != self.owner.equipe and c.estado.esta_vivo]:
-                         if calcular_distancia(self.owner.movimento.posicao, inimigo.movimento.posicao) < self.owner.ataque.alcance_efetivo * 1.5: # Ex: 1.5x o alcance
-                              inimigos_muito_perto = True
-                              break
-                    if not inimigos_muito_perto:
-                        print(f"RECUPEROU MORAL: {self.owner.id_unico} parou de fugir.")
-                        self.owner.estado.estado_atual = "Ocioso" # Volta ao estado normal
-                    # else: print(f"DEBUG RECUPERAR: {self.owner.id_unico} moral ok, mas inimigos perto.")
+            # --- LÓGICA DE TRANSIÇÃO DE ESTADO ---
+            if not self.imune_a_medo:
+                if estado_atual == "Fugindo":
+                    # Condição para PARAR de fugir: moral acima do limiar de recuperação
+                    if self.moral_atual > self.limiar_recuperar:
+                         # Verifica se inimigos estão muito perto
+                         inimigos_muito_perto = False
+                         for inimigo in [c for c in todos_combatentes if c.equipe != self.owner.equipe and c.estado.esta_vivo]:
+                              # Usa uma distância fixa menor que o raio de check moral para segurança
+                              if calcular_distancia(self.owner.movimento.posicao, inimigo.movimento.posicao) < RAIO_CHEK_MORAL * 0.5:
+                                   inimigos_muito_perto = True
+                                   break
+                         if not inimigos_muito_perto:
+                             print(f"RECUPEROU MORAL: {self.owner.id_unico} parou de fugir (Moral: {self.moral_atual:.1f})")
+                             self.owner.estado.estado_atual = "Ocioso" # MUDOU O ESTADO
+                         # else: print(f"DEBUG RECUPERAR: {self.owner.id_unico} moral ok, mas inimigos perto.")
+                    # Se a moral ainda está baixa, continua fugindo, não faz nada aqui
 
-            elif not self.imune_a_medo: # Só tenta fugir se não for imune
-                # Tenta Fugir
-                if self.moral_atual <= self.limiar_fugir:
-                    # Chance de resistir com base na coragem
-                    # Formula: se random > coragem^X -> Foge (coragem alta = menor chance de passar)
-                    # Ex: X=0.5 => random > sqrt(coragem). Se coragem=0.81, precisa random > 0.9 (10% chance fugir)
-                    # Ex: X=1.0 => random > coragem. Se coragem=0.8, precisa random > 0.8 (20% chance fugir)
-                    fator_resistencia_coragem = self.coragem # Usar coragem diretamente (0 a 1)
-                    if random.random() > fator_resistencia_coragem:
-                        print(f"FUGINDO: {self.owner.id_unico} entrou em pânico!")
-                        self.owner.estado.estado_atual = "Fugindo"
-                        self.owner.ataque.alvo_atual = None # Para de mirar
-                    # else: print(f"DEBUG FUGIR: {self.owner.id_unico} resistiu ao medo (Moral: {self.moral_atual:.1f})")
+                elif estado_atual != "Fugindo": # Só tenta fugir se não estiver já fugindo
+                    # Condição para COMEÇAR a fugir: moral abaixo do limiar de fuga
+                    if self.moral_atual <= self.limiar_fugir:
+                         fator_resistencia_coragem = self.coragem
+                         if random.random() > fator_resistencia_coragem:
+                             print(f"FUGINDO: {self.owner.id_unico} entrou em pânico! (Moral: {self.moral_atual:.1f})")
+                             self.owner.estado.estado_atual = "Fugindo" # MUDOU O ESTADO
+                             self.owner.ataque.alvo_atual = None
+                         # else: print(f"DEBUG FUGIR: {self.owner.id_unico} resistiu ao medo (Moral: {self.moral_atual:.1f})")
+
+            # Debug final do estado após a lógica da moral
+            # print(f"MORAL FINAL CHECK: {self.owner.id_unico} Estado: {self.owner.estado.estado_atual} Moral: {self.moral_atual:.1f}")

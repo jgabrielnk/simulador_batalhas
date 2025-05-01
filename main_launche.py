@@ -8,4 +8,4 @@ from interface_tkinter.app_principal import AplicacaoSimulador
 # --- Ponto de Entrada Principal ---
 if __name__ == "__main__":
     app = AplicacaoSimulador()
-    app.mainloop()
+    app.mainloop() 
